@@ -33,20 +33,15 @@ import com.empatica.empalink.config.EmpaSensorType;
 import com.empatica.empalink.config.EmpaStatus;
 import com.empatica.empalink.delegate.EmpaDataDelegate;
 import com.empatica.empalink.delegate.EmpaStatusDelegate;
-import com.google.gson.JsonObject;
-
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
+import com.google.gson.GsonBuilder;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
+import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
-import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
-import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -72,14 +67,13 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
     private TextView statusLabel;
     private TextView deviceNameLabel;
     private LinearLayout dataCnt;
-    private ApiInterface apiInterface;
     private String deviceName;
     private String apiKey;
     private String serverAddress;
     // name of the run/experiment, for now we set it to current ts
     private String run;
 
-//    MqttAndroidClient client;
+    private MqttAndroidClient mqttClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -125,15 +119,17 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
                 apiKey = apiKeyInput.getText().toString();
                 serverAddress = serverAddressInput.getText().toString();
                 Log.d(TAG, ">>> apiKey:" + apiKey + " server: " + serverAddress);
-                apiInterface = ApiConnector.connect(serverAddress);
+//                apiInterface = ApiConnector.connect(serverAddress);
                 initEmpaticaDeviceManager();
 
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMddyyyyHHmm")
                         .withZone(ZoneId.systemDefault());
                 run = String.format("series-%s", formatter.format(Instant.now()));
 
-//                String clientId = MqttClient.generateClientId();
-//                client = new MqttAndroidClient(this.getApplicationContext(), "tcp://192.168.1.4:1883", clientId);
+                String clientId = MqttClient.generateClientId();
+                mqttClient = new MqttAndroidClient(this.getApplicationContext(), "tcp://" + serverAddress + ":1883", clientId);
+                Log.d(TAG, "@@@@@@ Connected to mqtt " + mqttClient);
+                mqttConnect();
 
                 dialog.dismiss();
             });
@@ -143,6 +139,37 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
         //to avoid popup
         apiKey = EMPATICA_API_KEY;
         initEmpaticaDeviceManager();
+    }
+
+    private void mqttConnect() {
+        MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
+        mqttConnectOptions.setAutomaticReconnect(true);
+        mqttConnectOptions.setCleanSession(false);
+
+        try {
+            mqttClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                    DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
+                    disconnectedBufferOptions.setBufferEnabled(true);
+                    disconnectedBufferOptions.setBufferSize(100);
+                    disconnectedBufferOptions.setPersistBuffer(false);
+                    disconnectedBufferOptions.setDeleteOldestMessages(false);
+                    mqttClient.setBufferOpts(disconnectedBufferOptions);
+
+                    Log.e(TAG, "@@@@ >>>>  Successfully connect to mqtt server at: " + serverAddress);
+                }
+
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable e) {
+                    Log.e(TAG, "@@@@ Failed to connect to mqtt server at: " + serverAddress, e);
+                }
+            });
+
+
+        } catch (MqttException ex){
+            ex.printStackTrace();
+        }
     }
 
     @Override
@@ -342,27 +369,13 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
 
     private void sendDataToServer(EventData event) {
         Log.d(TAG, "Sending " + event);
-        apiInterface.sendData(event, new Callback<JsonObject>() {
-            @Override
-            public void success(JsonObject jsonObject, Response response) {
-//                String responseText = jsonObject.get("result").getAsString();
-//                Toast.makeText(getApplicationContext(), responseText, Toast.LENGTH_SHORT).show();
-//                updateLabel(edaLabel, "" + responseText);
-            }
-            @Override
-            public void failure(RetrofitError error) {
-//                Toast.makeText(getApplicationContext(), error.getMessage(), Toast.LENGTH_SHORT).show();
-//                updateLabel(edaLabel, "oops" );
-                Log.e(TAG, "Retrofit error: " + error);
-            }
-        });
 
-//        String message = "test"; //xVal.getText().toString()+","+yVal.getText().toString()+","+zVal.getText().toString();
-//        try{
-//            client.publish("test/topic",message.getBytes(),0,false);
-//        }catch (MqttException e){
-//            e.printStackTrace();
-//        }
+        String message = new GsonBuilder().create().toJson(event, EventData.class);
+        try{
+            mqttClient.publish("e4", message.getBytes(), 0, false);
+        }catch (MqttException e){
+            e.printStackTrace();
+        }
     }
 
     @Override
