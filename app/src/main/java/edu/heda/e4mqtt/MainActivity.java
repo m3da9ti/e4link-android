@@ -185,37 +185,38 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_PERMISSION_ACCESS_COARSE_LOCATION) {
-            // If request is cancelled, the result arrays are empty.
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission was granted, yay!
-                initEmpaticaDeviceManager();
-            } else {
-                // Permission denied, boo!
-                final boolean needRationale = ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION);
-                new AlertDialog.Builder(this)
-                        .setTitle("Permission required")
-                        .setMessage("Without this permission bluetooth low energy devices cannot be found, allow it in order to connect to the device.")
-                        .setPositiveButton("Retry", (dialog, which) -> {
-                            // try again
-                            if (needRationale) {
-                                // the "never ask again" flash is not set, try again with permission request
-                                initEmpaticaDeviceManager();
-                            } else {
-                                // the "never ask again" flag is set so the permission requests is disabled, try open app settings to enable the permission
-                                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                                Uri uri = Uri.fromParts("package", getPackageName(), null);
-                                intent.setData(uri);
-                                startActivity(intent);
-                            }
-                        })
-                        .setNegativeButton("Exit application", (dialog, which) -> {
-                            // without permission exit is the only way
-                            finish();
-                        })
-                        .show();
-            }
-        }
+
+//        if (requestCode == REQUEST_PERMISSION_ACCESS_COARSE_LOCATION) {
+//            // If request is cancelled, the result arrays are empty.
+//            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+//                // Permission was granted, yay!
+//                initEmpaticaDeviceManager();
+//            } else {
+//                // Permission denied, boo!
+//                final boolean needRationale = ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION);
+//                new AlertDialog.Builder(this)
+//                        .setTitle("Permission required")
+//                        .setMessage("Without this permission bluetooth low energy devices cannot be found, allow it in order to connect to the device.")
+//                        .setPositiveButton("Retry", (dialog, which) -> {
+//                            // try again
+//                            if (needRationale) {
+//                                // the "never ask again" flash is not set, try again with permission request
+//                                initEmpaticaDeviceManager();
+//                            } else {
+//                                // the "never ask again" flag is set so the permission requests is disabled, try open app settings to enable the permission
+//                                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+//                                Uri uri = Uri.fromParts("package", getPackageName(), null);
+//                                intent.setData(uri);
+//                                startActivity(intent);
+//                            }
+//                        })
+//                        .setNegativeButton("Exit application", (dialog, which) -> {
+//                            // without permission exit is the only way
+//                            finish();
+//                        })
+//                        .show();
+//            }
+//        }
     }
 
     private void initEmpaticaDeviceManager() {
