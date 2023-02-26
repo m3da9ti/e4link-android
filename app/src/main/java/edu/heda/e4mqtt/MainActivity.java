@@ -134,6 +134,7 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
 
                 String clientId = MqttClient.generateClientId();
                 //Android 12
+                //https://stackoverflow.com/a/71839305/4440399
                 //mqttClient = new MqttAndroidClient(this.getApplicationContext(), "tcp://" + serverAddress + ":1883", clientId);
                 mqttClient = new MqttAndroidClient(this.getApplicationContext(), "tcp://" + serverAddress + ":1883", clientId, Ack.AUTO_ACK);
                 Log.d(TAG, "@@@@@@ Connected to mqtt " + mqttClient);
