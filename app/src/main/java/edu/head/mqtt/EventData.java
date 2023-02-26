@@ -1,4 +1,4 @@
-package com.empatica.sample;
+package edu.head.mqtt;
 
 import com.google.gson.annotations.SerializedName;
 

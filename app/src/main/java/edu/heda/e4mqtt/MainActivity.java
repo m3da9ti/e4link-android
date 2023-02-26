@@ -1,4 +1,4 @@
-package com.empatica.sample;
+package edu.heda.e4mqtt;
 
 import android.Manifest;
 import android.app.Activity;
@@ -9,6 +9,7 @@ import android.bluetooth.le.ScanCallback;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
@@ -35,7 +36,11 @@ import com.empatica.empalink.delegate.EmpaDataDelegate;
 import com.empatica.empalink.delegate.EmpaStatusDelegate;
 import com.google.gson.GsonBuilder;
 
-import org.eclipse.paho.android.service.MqttAndroidClient;
+//mqtt Android 12
+//import org.eclipse.paho.android.service.MqttAndroidClient;
+import info.mqtt.android.service.Ack;
+import info.mqtt.android.service.MqttAndroidClient;
+
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
@@ -53,6 +58,7 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
     private static final String TAG = "MainActivity";
     private static final int REQUEST_ENABLE_BT = 1;
     private static final int REQUEST_PERMISSION_ACCESS_COARSE_LOCATION = 1;
+    private static final int REQUEST_PERMISSION_ACCESS_BLE = 2;
     // hardcode default API key
     private static final String EMPATICA_API_KEY = "62c769b692aa4c61aa7fc4ec28cdbab4";
     private EmpaDeviceManager deviceManager = null;
@@ -127,7 +133,9 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
                 run = String.format("series-%s", formatter.format(Instant.now()));
 
                 String clientId = MqttClient.generateClientId();
-                mqttClient = new MqttAndroidClient(this.getApplicationContext(), "tcp://" + serverAddress + ":1883", clientId);
+                //Android 12
+                //mqttClient = new MqttAndroidClient(this.getApplicationContext(), "tcp://" + serverAddress + ":1883", clientId);
+                mqttClient = new MqttAndroidClient(this.getApplicationContext(), "tcp://" + serverAddress + ":1883", clientId, Ack.AUTO_ACK);
                 Log.d(TAG, "@@@@@@ Connected to mqtt " + mqttClient);
                 mqttConnect();
 
@@ -146,7 +154,8 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
         mqttConnectOptions.setAutomaticReconnect(true);
         mqttConnectOptions.setCleanSession(false);
 
-        try {
+        //android 12 mqtt
+//        try {
             mqttClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
@@ -166,10 +175,10 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
                 }
             });
 
-
-        } catch (MqttException ex){
-            ex.printStackTrace();
-        }
+// android 12 mqtt
+//        } catch (MqttException ex){
+//            ex.printStackTrace();
+//        }
     }
 
     @Override
@@ -209,29 +218,35 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
     }
 
     private void initEmpaticaDeviceManager() {
-        // Android 6 (API level 23) now require ACCESS_COARSE_LOCATION permission to use BLE
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, REQUEST_PERMISSION_ACCESS_COARSE_LOCATION);
-        } else {
 
-            if (TextUtils.isEmpty(EMPATICA_API_KEY)) {
-                new AlertDialog.Builder(this)
-                        .setTitle("Warning")
-                        .setMessage("Please insert your API KEY")
-                        .setNegativeButton("Close", (dialog, which) -> {
-                            // without permission exit is the only way
-                            finish();
-                        })
-                        .show();
-                return;
+//        if (Build.VERSION.SDK_INT >= 31) {
+            // Android 12 (S)
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN)
+                    != PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "Need permissions...");
+                this.requestPermissions(new String[]{
+                        Manifest.permission.BLUETOOTH_SCAN,
+                        Manifest.permission.BLUETOOTH_CONNECT}, REQUEST_PERMISSION_ACCESS_BLE);
+            } else {
+                // Create a new EmpaDeviceManager. MainActivity is both its data and status delegate.
+                deviceManager = new EmpaDeviceManager(getApplicationContext(), this, this);
+
+                // Initialize the Device Manager using your API key. You need to have Internet access at this point.
+                deviceManager.authenticateWithAPIKey(apiKey);
             }
-
-            // Create a new EmpaDeviceManager. MainActivity is both its data and status delegate.
-            deviceManager = new EmpaDeviceManager(getApplicationContext(), this, this);
-
-            // Initialize the Device Manager using your API key. You need to have Internet access at this point.
-            deviceManager.authenticateWithAPIKey(apiKey);
-        }
+//        }
+//        } else {
+//            // Android 6 (API level 23) now require ACCESS_COARSE_LOCATION permission to use BLE
+//            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_PERMISSION_ACCESS_COARSE_LOCATION);
+//            } else {
+//                // Create a new EmpaDeviceManager. MainActivity is both its data and status delegate.
+//                deviceManager = new EmpaDeviceManager(getApplicationContext(), this, this);
+//
+//                // Initialize the Device Manager using your API key. You need to have Internet access at this point.
+//                deviceManager.authenticateWithAPIKey(apiKey);
+//            }
+//        }
     }
 
     @Override
@@ -371,11 +386,11 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
         Log.d(TAG, "Sending " + event);
 
         String message = new GsonBuilder().create().toJson(event, EventData.class);
-        try{
+//        try{
             mqttClient.publish("e4", message.getBytes(), 0, false);
-        }catch (MqttException e){
-            e.printStackTrace();
-        }
+//        }catch (MqttException e){
+//            e.printStackTrace();
+//        }
     }
 
     @Override

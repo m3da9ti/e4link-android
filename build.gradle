@@ -24,5 +24,6 @@ allprojects {
             dirs 'libs'
         }
         google()
+                maven { url "https://jitpack.io" }
     }
 }
