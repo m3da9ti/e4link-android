@@ -41,6 +41,20 @@
         android:inputType="textPersonName"
         android:selectAllOnFocus="true" />
 
+    <EditText
+        android:id="@+id/device_name_edit"
+        android:layout_width="269dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="50dp"
+        android:layout_marginLeft="50dp"
+        android:layout_marginTop="24dp"
+        android:ems="10"
+        android:hint="@string/device_name_label"
+        android:inputType="textPersonName"
+        android:selectAllOnFocus="true" />
 
     <Button
         android:id="@+id/api_key_submit"

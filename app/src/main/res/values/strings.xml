@@ -6,6 +6,7 @@
     <string name="accel_z">z:</string>
     <string name="api_key_label">Enter API Key:</string>
     <string name="server_address_label">Enter server address:</string>
+    <string name="device_name_label">Enter device id:</string>
     <string name="api_key_submit_label">OK</string>
     <string name="bvp_label">BVP</string>
     <string name="eda_label">EDA</string>
