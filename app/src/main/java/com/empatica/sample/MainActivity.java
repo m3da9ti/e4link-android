@@ -68,8 +68,9 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
     private TextView deviceNameLabel;
     private LinearLayout dataCnt;
     private String deviceName;
+    private String desiredDeviceName = "A03FB4";
     private String apiKey;
-    private String serverAddress;
+    private String serverAddress = "192.168.1.8";
     // name of the run/experiment, for now we set it to current ts
     private String run;
 
@@ -111,15 +112,19 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
             dialog.setTitle("Settings");
 
             EditText apiKeyInput = (EditText)dialog.findViewById(R.id.api_key_edit);
+            EditText deviceNameInput = (EditText)dialog.findViewById(R.id.device_name_edit);
             EditText serverAddressInput = (EditText)dialog.findViewById(R.id.server_address_edit);
             Button doneButton = (Button) dialog.findViewById(R.id.api_key_submit);
             apiKeyInput.setText(EMPATICA_API_KEY);
-            serverAddressInput.setText("192.168.1.4");
+            serverAddressInput.setText(this.serverAddress);
+            deviceNameInput.setText(this.desiredDeviceName);
+
             doneButton.setOnClickListener(vv -> {
                 apiKey = apiKeyInput.getText().toString();
                 serverAddress = serverAddressInput.getText().toString();
-                Log.d(TAG, ">>> apiKey:" + apiKey + " server: " + serverAddress);
-//                apiInterface = ApiConnector.connect(serverAddress);
+                desiredDeviceName = deviceNameInput.getText().toString();
+
+                Log.d(TAG, ">>> apiKey:" + apiKey + " server: " + serverAddress + " device: " + desiredDeviceName);
                 initEmpaticaDeviceManager();
 
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMddyyyyHHmm")
@@ -262,17 +267,21 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
         // https://www.empatica.com/connect/developer.php
         if (allowed) {
             // Stop scanning. The first allowed device will do.
-            deviceManager.stopScanning();
-            try {
-                // Connect to the device
-                deviceManager.connectDevice(bluetoothDevice);
-                // Store device name
-                this.deviceName = deviceName;
-                updateLabel(deviceNameLabel, "To: " + deviceName);
-            } catch (ConnectionNotAllowedException e) {
-                // This should happen only if you try to connect when allowed == false.
-                Toast.makeText(MainActivity.this, "Sorry, you can't connect to this device", Toast.LENGTH_SHORT).show();
-                Log.e(TAG, "didDiscoverDevice" + deviceName + "allowed: " + allowed + " - ConnectionNotAllowedException", e);
+            Log.d(TAG, "Discovered device: " + deviceName);
+            if (deviceName.endsWith(desiredDeviceName)) {
+                Log.d(TAG, "Matched the device: " + deviceName + " with " + desiredDeviceName);
+                deviceManager.stopScanning();
+                try {
+                    // Connect to the device
+                    deviceManager.connectDevice(bluetoothDevice);
+                    // Store device name
+                    this.deviceName = deviceName;
+                    updateLabel(deviceNameLabel, "To: " + deviceName);
+                } catch (ConnectionNotAllowedException e) {
+                    // This should happen only if you try to connect when allowed == false.
+                    Toast.makeText(MainActivity.this, "Sorry, you can't connect to this device", Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "didDiscoverDevice" + deviceName + "allowed: " + allowed + " - ConnectionNotAllowedException", e);
+                }
             }
         }
     }
